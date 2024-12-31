@@ -5,26 +5,29 @@ from tkinter import messagebox
 
 
 class Window():
-    def __init__(self, root):
-        self.root = root
+    def __init__(self):
+        self.root = tk.Tk()
         self.root.title("Slider App")
         self.root.geometry("400x300")
         
         # 標籤：顯示應用名稱
-        self.title_label = tk.Label(root, text="歡迎使用滑動條應用程式", font=("Arial", 16))
+        self.title_label = tk.Label(self.root, text="歡迎使用滑動條應用程式", font=("Arial", 16))
         self.title_label.pack(pady=10)
 
         # 滑動條
-        self.slider = tk.Scale(root, from_=0, to=100, orient="horizontal", length=300)
+        self.slider = tk.Scale(self.root, from_=0, to=100, orient="horizontal", length=300)
         self.slider.pack(pady=20)
 
         # 標籤：顯示當前值
-        self.value_label = tk.Label(root, text=f"當前值：{self.slider.get()}", font=("Arial", 14))
+        self.value_label = tk.Label(self.root, text=f"當前值：{self.slider.get()}", font=("Arial", 14))
         self.value_label.pack(pady=10)
 
         # 更新值按鈕
-        self.update_button = tk.Button(root, text="顯示值", command=self.update_value, font=("Arial", 12), bg="blue", fg="white")
+        self.update_button = tk.Button(self.root, text="顯示值", command=self.update_value, font=("Arial", 12), bg="blue", fg="white")
         self.update_button.pack(pady=10)
+
+    def start(self):
+        self.root.mainloop()
         
     def update_value(self):
         # 取得滑動條的值並顯示於彈出視窗
@@ -91,6 +94,5 @@ class Window():
     
     
 if __name__ == "__main__":
-    r = tk.Tk()
-    window = Window(r)
-    r.mainloop()
+    window = Window()
+    window.start()
