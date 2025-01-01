@@ -1,20 +1,59 @@
 import pyaudio
 import tkinter as tk
 import numpy as np
-from tkinter import messagebox
+import sounddevice as sd
+from tkinter import messagebox, ttk
+
+
+def get_audio_devices():
+    pa = pyaudio.PyAudio()
+    input_devices = []
+    output_devices = []
+
+    for i in range(pa.get_device_count()):
+        device_info = pa.get_device_info_by_index(i)
+        if device_info["maxInputChannels"] > 0:
+            input_devices.append(device_info["name"])
+        if device_info["maxOutputChannels"] > 0:
+            output_devices.append(device_info["name"])
+
+    pa.terminate()
+    return input_devices, output_devices
 
 
 class Window():
     def __init__(self):
         self.root = tk.Tk()
-        self.root.title("Slider App")
-        self.root.geometry("400x300")
-        
-        # 標籤：顯示應用名稱
-        self.title_label = tk.Label(self.root, text="歡迎使用滑動條應用程式", font=("Arial", 16))
-        self.title_label.pack(pady=10)
+        self.root.title("Volume Controller")
+        self.root.geometry("600x400")
 
-        # 滑動條
+        # 獲取音訊設備
+        input_devices, output_devices = get_audio_devices()
+
+        # 音訊輸入/輸出區
+        devices_frame = tk.Frame(self.root)
+        devices_frame.pack()
+
+        # 音訊輸入設備選單
+        input_frame = tk.Frame(devices_frame)
+        input_frame.grid(row=0, column=0, padx=5, pady=5, sticky="e")
+
+        input_label = tk.Label(input_frame, text="Input : ")
+        input_label.grid(row=0, column=0, padx=5, pady=5, sticky="e")
+
+        input_box = ttk.Combobox(input_frame, values=input_devices)
+        input_box.grid(row=0, column=1, padx=5, pady=5, sticky="w")
+
+        # 音訊輸出設備選單
+        output_frame = tk.Frame(devices_frame)
+        output_frame.grid(row=0, column=1, padx=5, pady=5, sticky="w")
+        output_label = tk.Label(output_frame, text="Output : ")
+        output_label.grid(row=0, column=0, padx=5, pady=5, sticky="e")
+        output_menu = ttk.Combobox(output_frame, values=output_devices)
+        output_menu.grid(row=0, column=1, padx=5, pady=5, sticky="w")
+
+
+        # 音量增益
         self.slider = tk.Scale(self.root, from_=0, to=100, orient="horizontal", length=300)
         self.slider.pack(pady=20)
 
@@ -28,14 +67,17 @@ class Window():
 
     def start(self):
         self.root.mainloop()
-        
+
+    def getInput(self):
+        print()
+
     def update_value(self):
         # 取得滑動條的值並顯示於彈出視窗
         value = self.slider.get()
         self.value_label.config(text=f"當前值：{value}")
         messagebox.showinfo("當前值", f"滑動條的值是：{value}")
-    
-    
+
+
 # # 音量調整函數
 # def adjust_volume(audio_data, volume_factor):
 #     return np.int16(audio_data * volume_factor)
@@ -91,8 +133,8 @@ class Window():
 #     output_stream.stop_stream()
 #     output_stream.close()
 #     p.terminate()
-    
-    
+
+
 if __name__ == "__main__":
     window = Window()
     window.start()
