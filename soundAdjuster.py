@@ -22,7 +22,7 @@ class Adjuster:
             dev_info = pa.get_device_info_by_index(i)
             if input_device == dev_info["name"]:
                 idi = i
-                print("Input" + dev_info["name"])
+                print("Input -> " + dev_info["name"])
                 break
 
         if idi is None:
@@ -31,7 +31,7 @@ class Adjuster:
         input_stream_device = pa.open(
             format=pyaudio.paInt16,
             channels=1,
-            rate=44100,
+            rate=int(pa.get_device_info_by_index(idi).get('defaultSampleRate')),
             input=True,
             input_device_index=idi,
             frames_per_buffer=1024,
@@ -42,7 +42,7 @@ class Adjuster:
             dev_info = pa.get_device_info_by_index(i)
             if output_device == dev_info["name"]:
                 odi = i
-                print("Output" + dev_info["name"])
+                print("Output -> " + dev_info["name"])
                 break
 
         if odi is None:
@@ -53,7 +53,7 @@ class Adjuster:
         output_stream_device = pa.open(
             format=pyaudio.paInt16,
             channels=1,
-            rate=44100,
+            rate=int(pa.get_device_info_by_index(odi).get("defaultSampleRate")),
             output=True,
             output_device_index=odi,
             frames_per_buffer=1024,
@@ -72,7 +72,7 @@ class Adjuster:
                     if shout == False:
                         shout = True
                         # playsound("Sound/hint.mp3", False)
-                        print("shout")
+                        print("Shout!")
 
                     adjusted_data = adjust_volume(
                         audio_data, self.DATA_BOOST["volume_boost"]
@@ -86,6 +86,7 @@ class Adjuster:
 
                 # 結束
                 if keyboard.is_pressed("esc"):
+                    print("Relax...")
                     return
 
         except KeyboardInterrupt:
@@ -99,13 +100,27 @@ class Adjuster:
         pa = pyaudio.PyAudio()
         input_devices = []
         output_devices = []
+        info = pa.get_host_api_info_by_index(0)
+        numdevices = info.get("deviceCount")
 
-        for i in range(pa.get_device_count()):
-            device_info = pa.get_device_info_by_index(i)
-            if device_info["maxInputChannels"] > 0:
-                input_devices.append(device_info["name"])
-            if device_info["maxOutputChannels"] > 0:
-                output_devices.append(device_info["name"])
+        for i in range(0, numdevices):
+            if (
+                pa.get_device_info_by_host_api_device_index(0, i).get(
+                    "maxInputChannels"
+                )
+            ) > 0:
+                input_devices.append(
+                    pa.get_device_info_by_host_api_device_index(0, i).get("name")
+                )
+
+            if (
+                pa.get_device_info_by_host_api_device_index(0, i).get(
+                    "maxOutputChannels"
+                )
+            ) > 0:
+                output_devices.append(
+                    pa.get_device_info_by_host_api_device_index(0, i).get("name")
+                )
 
         pa.terminate()
         return input_devices, output_devices
