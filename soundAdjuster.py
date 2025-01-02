@@ -71,7 +71,7 @@ class Adjuster:
                 if keyboard.is_pressed(self.KEY):
                     if shout == False:
                         shout = True
-                        # playsound("Sound/hint.mp3", False)
+                        playsound("Sound/hint.mp3")
                         print("Shout!")
 
                     adjusted_data = adjust_volume(
