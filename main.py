@@ -1,8 +1,8 @@
 import threading
 import time
 import tkinter as tk
-from tkinter import ttk, font, messagebox
-from soundAdjuster import Adjuster
+from tkinter import ttk, font
+from soundAdjuster import Adjuster, DataPack
 
 KEY = "f"
 HINT = "Sound/hint.mp3"
@@ -17,8 +17,7 @@ class Window:
         self.root.title("Volume Controller")
         self.root.geometry("600x400")
         self.font = font.Font(family="Arial", size=10)
-
-        self.VOLUME_BOOSt = 0.0
+        self.AD = None
 
         # 獲取音訊設備
         input_devices, output_devices = Adjuster.get_audio_devices()
@@ -83,34 +82,51 @@ class Window:
         )
         monitor_button.pack(side="right", anchor="sw", padx=5, pady=5)
 
-        def update_label(value):
-            self.VOLUME_BOOSt = float(value)
-            volume_value_label.config(text=f"{value}")
-
         # 音量增益滑桿
         volume_frame = tk.Frame(self.root)
         volume_frame.pack(padx=PAD_X, pady=PAD_Y)
         volume_label = tk.Label(volume_frame, text="Volume Boost : ", font=self.font)
         volume_label.pack(side="left", anchor="n")
-        volume_scale = tk.Scale(
+        self.volume_scale = tk.Scale(
             volume_frame,
             from_=0,
-            to=20,
+            to=100,
             orient="horizontal",
             length=300,
-            tickinterval=5,
+            tickinterval=20,
             showvalue=False,
             font=self.font,
-            command=update_label,
+            command=lambda val: volume_value_label.config(text=f"{val}"),
         )
-        volume_scale.pack(side="left")
+        self.volume_scale.pack(side="left")
         volume_value_label = tk.Label(volume_frame, text="0", width=10, font=self.font)
         volume_value_label.pack(side="left", anchor="n")
-        self.check_var = tk.BooleanVar(value=True)
-        volume_check = tk.Checkbutton(
-            volume_frame, variable=self.check_var, font=self.font
-        )
+        volume_check = tk.Checkbutton(volume_frame, font=self.font)
+        volume_check.select()
         volume_check.pack(side="left", anchor="n")
+
+        # 失真強度滑桿
+        clip_frame = tk.Frame(self.root)
+        clip_frame.pack(padx=PAD_X, pady=PAD_Y)
+        clip_label = tk.Label(clip_frame, text="Clip : ", font=self.font)
+        clip_label.pack(side="left", anchor="n")
+        self.clip_scale = tk.Scale(
+            clip_frame,
+            from_=0,
+            to=100,
+            orient="horizontal",
+            length=300,
+            tickinterval=20,
+            showvalue=False,
+            font=self.font,
+            command=lambda val: clip_value_label.config(text=f"{val}"),
+        )
+        self.clip_scale.pack(side="left")
+        clip_value_label = tk.Label(clip_frame, text="0", width=10, font=self.font)
+        clip_value_label.pack(side="left", anchor="n")
+        clip_check = tk.Checkbutton(clip_frame, font=self.font)
+        clip_check.select()
+        clip_check.pack(side="left", anchor="n")
 
         # 開始按鈕
         start_button = tk.Button(
@@ -125,6 +141,9 @@ class Window:
         self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
 
     def on_closing(self):
+        if self.AD != None:
+            self.AD.interrupt()
+
         self.root.destroy()
 
         # if messagebox.askokcancel("Quit", "Do you want to quit?"):
@@ -138,21 +157,19 @@ class Window:
     def run(self):
         print("Start running...")
 
-        # 更新
-        data_boost = {}
-        data_boost["volume_boost"] = 1 + self.VOLUME_BOOSt
-
-        ad = Adjuster()
-        ad.DATA_BOOST = data_boost
+        self.AD = Adjuster()        
+        self.AD.DATA_BOOST = self.__prepare()
 
         run_thread = threading.Thread(
-            target=ad.run,
+            target=self.AD.run,
             name="run",
             args=(self.input_box.get(), self.output_box.get()),
         )
         run_thread.start()
+
         self.root.focus_set()
         self.__set_state(self.root, "disable")
+
         while True:
             if run_thread.is_alive():
                 time.sleep(0.1)
@@ -160,18 +177,37 @@ class Window:
             else:
                 self.__set_state(self.root, "normal")
                 return
-        # ad.run(self.input_box.get(), self.output_box.get())
 
     def test(self):
         print("Start testing...")
 
-        # 更新
-        data_boost = {}
-        data_boost["volume_boost"] = 1 + self.VOLUME_BOOSt
+        self.AD = Adjuster()
+        self.AD.DATA_BOOST = self.__prepare()
 
-        ad = Adjuster()
-        ad.DATA_BOOST = data_boost
-        ad.run(self.input_box.get(), self.monitor_box.get())
+        run_thread = threading.Thread(
+            target=self.AD.run,
+            name="test",
+            args=(self.input_box.get(), self.monitor_box.get()),
+        )
+        run_thread.start()
+
+        self.root.focus_set()
+        self.__set_state(self.root, "disable")
+
+        while True:
+            if run_thread.is_alive():
+                time.sleep(0.1)
+                self.root.update()
+            else:
+                self.__set_state(self.root, "normal")
+                return
+
+    def __prepare(self) ->DataPack:
+        data = DataPack()
+        data.VolumeBoost = 1 + self.volume_scale.get() / 5.0
+        data.Clip = 1 - (self.clip_scale.get() / 100.)
+
+        return data
 
     def __key_event(self):
 
@@ -207,3 +243,4 @@ class Window:
 if __name__ == "__main__":
     window = Window()
     window.show()
+    
