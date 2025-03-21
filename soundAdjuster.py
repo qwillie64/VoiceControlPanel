@@ -1,7 +1,16 @@
 import pyaudio
 import keyboard
+import time
 import numpy as np
 from playsound import playsound
+
+
+class Effect:
+    def __init__(self):
+        pass
+
+    def run(self):
+        pass
 
 
 class Adjuster:
@@ -34,7 +43,7 @@ class Adjuster:
         input_stream_device = pa.open(
             format=pyaudio.paInt16,
             channels=1,
-            rate=int(pa.get_device_info_by_index(idi).get('defaultSampleRate')),
+            rate=int(pa.get_device_info_by_index(idi).get("defaultSampleRate")),
             input=True,
             input_device_index=idi,
             frames_per_buffer=1024,
@@ -63,12 +72,16 @@ class Adjuster:
         )
 
         try:
+
             shout = False
             self.running = True
             while self.running:
+
                 # 讀取
                 data = input_stream_device.read(1024, exception_on_overflow=False)
                 audio_data = np.frombuffer(data, dtype=np.int16)
+
+                start = time.time()
 
                 # 調整
                 if keyboard.is_pressed(self.KEY):
@@ -79,17 +92,25 @@ class Adjuster:
 
                     # 失真
                     audio_data = np.clip(
-                        audio_data, -32768 * self.DATA_BOOST.Clip, 32767 * self.DATA_BOOST.Clip
+                        audio_data,
+                        -32768 * self.DATA_BOOST.Clip,
+                        32767 * self.DATA_BOOST.Clip,
                     )
 
                     # 音量
                     audio_data = np.int16(audio_data * self.DATA_BOOST.VolumeBoost)
 
                     # 噪音
-                    # audio_data = audio_data + (np.random.randn(len(audio_data)) * 0.1)
+                    # audio_data = audio_data + (np.random.uniform(-10, 10, size=len(audio_data)))
+                    audio_data = audio_data + np.random.randint(
+                        -1000, 1000, size=len(audio_data), dtype=np.int16
+                    )
 
                 else:
                     shout = False
+
+                end = time.time()
+                print(f"Execution Time: {end - start:.10f} seconds")
 
                 # 輸出
                 output_stream_device.write(audio_data.tobytes())
@@ -138,9 +159,9 @@ class Adjuster:
 
 class DataPack:
     def __init__(self):
-        self.VolumeBoost = 0.
-        self.Clip = 0.
-        self.Noise = 0.
+        self.VolumeBoost = 0.0
+        self.Clip = 0.0
+        self.Noise = 0.0
 
 
 if __name__ == "__main__":
